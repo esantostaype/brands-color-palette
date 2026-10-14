@@ -29,20 +29,100 @@
       overflow-x: hidden;
     }
 
+    @property --glow-a { syntax: '<color>'; inherits: true; initial-value: rgba(44,84,124,0.22); }
+    @property --glow-b { syntax: '<color>'; inherits: true; initial-value: rgba(89,121,169,0.14); }
+    @property --accent { syntax: '<color>'; inherits: true; initial-value: #6f8cc0; }
+
     body::after {
       content: '';
       position: fixed;
       inset: 0;
       background:
-        radial-gradient(ellipse 700px 500px at -10% -10%, rgba(44,84,124,0.22) 0%, transparent 70%),
-        radial-gradient(ellipse 400px 400px at 110% 110%, rgba(89,121,169,0.14) 0%, transparent 70%);
+        radial-gradient(ellipse 700px 500px at -10% -10%, var(--glow-a) 0%, transparent 70%),
+        radial-gradient(ellipse 400px 400px at 110% 110%, var(--glow-b) 0%, transparent 70%);
       pointer-events: none;
       z-index: 0;
     }
 
+    body { transition: --glow-a .6s ease, --glow-b .6s ease, --accent .4s ease; }
+
     .page { position: relative; z-index: 1; max-width: 1160px; margin: 0 auto; }
 
-    header { margin-bottom: 60px; }
+    header { margin-bottom: 40px; }
+
+    /* ── TABS ── */
+    .tabs {
+      position: relative;
+      display: inline-flex;
+      gap: 4px;
+      padding: 5px;
+      margin-bottom: 52px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 14px;
+      max-width: 100%;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab-indicator {
+      position: absolute;
+      top: 5px;
+      bottom: 5px;
+      left: 0;
+      width: 0;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.08);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+      transition: transform .38s cubic-bezier(.34,1.3,.64,1), width .38s cubic-bezier(.34,1.3,.64,1);
+      pointer-events: none;
+    }
+    .tab {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 18px;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--text-3);
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: color .2s;
+    }
+    .tab:hover { color: var(--text-2); }
+    .tab[aria-selected="true"] { color: var(--text-1); }
+    .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .tab-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      opacity: .55;
+      transition: opacity .2s, box-shadow .2s;
+    }
+    .tab[aria-selected="true"] .tab-dot { opacity: 1; box-shadow: 0 0 0 3px rgba(255,255,255,0.06), 0 0 12px currentColor; }
+
+    #root.enter .swatch-wrap { animation: rise .45s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i) * 22ms); }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: none; }
+    }
+    #root.leave .swatch-wrap { animation: fall .22s cubic-bezier(.4,0,1,1) both; animation-delay: calc(var(--i) * 12ms); }
+    #root.leave .group-header { transition: opacity .22s; opacity: 0; }
+    @keyframes fall {
+      from { opacity: 1; transform: none; }
+      to   { opacity: 0; transform: translateY(-8px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #root.enter .swatch-wrap,
+      #root.leave .swatch-wrap { animation: none; }
+      .tab-indicator { transition: none; }
+    }
     .eyebrow {
       font-family: var(--mono);
       font-size: 12px;
@@ -140,31 +220,67 @@
 <div class="page">
   <header>
     <div class="eyebrow">Design System</div>
-    <h1>Inszone <strong>Color Palette</strong></h1>
+    <h1><span id="brand-name">Inszone</span> <strong>Color Palette</strong></h1>
     <p class="subtitle">// Click any color to copy its HEX code.</p>
   </header>
-  <main id="root"></main>
+  <nav class="tabs" role="tablist" aria-label="Marca">
+    <span class="tab-indicator" aria-hidden="true"></span>
+  </nav>
+  <main id="root" role="tabpanel"></main>
   <footer>
-    <span class="foot">// inszone-color-palette.html</span>
+    <span class="foot" id="ffile">// inszone-color-palette.html</span>
     <span class="foot" id="fdate"></span>
   </footer>
 </div>
 
 <script>
-const GROUPS = [
-  { label:'Primary', colors:[
-    {stop:'50', hex:'#F3F6FB'},{stop:'100',hex:'#E3EBF6'},{stop:'200',hex:'#BECCE3'},
-    {stop:'300',hex:'#A4B6D8'},{stop:'400',hex:'#89A1CC'},{stop:'500',hex:'#6F8CC0'},
-    {stop:'600',hex:'#5979A9'},{stop:'700',hex:'#436692'},{stop:'800',hex:'#2C547C'},
-    {stop:'900',hex:'#164165'},{stop:'950',hex:'#002E4E'},
+const NEUTRAL = { label:'Neutral', colors:[
+  {stop:'50', hex:'#F9FAFB'},{stop:'100',hex:'#F3F4F6'},{stop:'200',hex:'#E5E7EB'},
+  {stop:'300',hex:'#D1D5DC'},{stop:'400',hex:'#99A1AF'},{stop:'500',hex:'#6A7282'},
+  {stop:'600',hex:'#4A5565'},{stop:'700',hex:'#364153'},{stop:'800',hex:'#1E2939'},
+  {stop:'900',hex:'#101828'},{stop:'950',hex:'#020618'},
+]};
+
+const BRANDS = [
+  { id:'inszone', name:'Inszone', groups:[
+    { label:'Primary', colors:[
+      {stop:'50', hex:'#F3F6FB'},{stop:'100',hex:'#E3EBF6'},{stop:'200',hex:'#BECCE3'},
+      {stop:'300',hex:'#A4B6D8'},{stop:'400',hex:'#89A1CC'},{stop:'500',hex:'#6F8CC0'},
+      {stop:'600',hex:'#5979A9'},{stop:'700',hex:'#436692'},{stop:'800',hex:'#2C547C'},
+      {stop:'900',hex:'#164165'},{stop:'950',hex:'#002E4E'},
+    ]},
+    NEUTRAL,
   ]},
-  { label:'Neutral', colors:[
-    {stop:'50', hex:'#F9FAFB'},{stop:'100',hex:'#F3F4F6'},{stop:'200',hex:'#E5E7EB'},
-    {stop:'300',hex:'#D1D5DC'},{stop:'400',hex:'#99A1AF'},{stop:'500',hex:'#6A7282'},
-    {stop:'600',hex:'#4A5565'},{stop:'700',hex:'#364153'},{stop:'800',hex:'#1E2939'},
-    {stop:'900',hex:'#101828'},{stop:'950',hex:'#020618'},
+  { id:'cover', name:'Cover Cannabis', groups:[
+    { label:'Mojo', colors:[
+      {stop:'50', hex:'#FCF5F0'},{stop:'100',hex:'#F9E8DB'},{stop:'200',hex:'#F2CDB6'},
+      {stop:'300',hex:'#EAAB87'},{stop:'400',hex:'#E08157'},{stop:'500',hex:'#D96136'},
+      {stop:'600',hex:'#C14729'},{stop:'700',hex:'#9D3620'},{stop:'800',hex:'#792516'},
+      {stop:'900',hex:'#55140D'},{stop:'950',hex:'#310303'},
+    ]},
+    NEUTRAL,
+  ]},
+  { id:'cpa', name:'CPA', accent:'#FDD200', groups:[
+    { label:'Lochmara', colors:[
+      {stop:'50', hex:'#F0F9FF'},{stop:'100',hex:'#E0F3FE'},{stop:'200',hex:'#B9E8FE'},
+      {stop:'300',hex:'#7CD6FD'},{stop:'400',hex:'#36C2FA'},{stop:'500',hex:'#0CABEB'},
+      {stop:'600',hex:'#007DB7'},{stop:'700',hex:'#006BA2'},{stop:'800',hex:'#00598E'},
+      {stop:'900',hex:'#004679'},{stop:'950',hex:'#003464'},
+    ]},
+    { label:'Accent', colors:[
+      {stop:'Accent', hex:'#FDD200'},
+    ]},
+    NEUTRAL,
   ]},
 ];
+
+// Color de la marca en un stop concreto de su paleta principal
+const stopOf = (brand, stop) => brand.groups[0].colors.find(c => c.stop === stop).hex;
+
+function rgba(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`;
+}
 
 const toast     = document.getElementById('toast');
 const toastDot  = document.getElementById('toast-dot');
@@ -203,23 +319,26 @@ function fallback(text, cb) {
   document.body.removeChild(ta);
 }
 
-const root = document.getElementById('root');
+const root      = document.getElementById('root');
+const tabsEl    = document.querySelector('.tabs');
+const indicator = document.querySelector('.tab-indicator');
 
-GROUPS.forEach(g => {
+function renderGroup(g) {
   const sec  = document.createElement('section');
   sec.className = 'group';
 
   const hdr = document.createElement('div');
   hdr.className = 'group-header';
-  hdr.innerHTML = `<span class="group-title">${g.label}</span><span class="group-sub">${g.colors.length} stops</span>`;
+  hdr.innerHTML = `<span class="group-title">${g.label}</span><span class="group-sub">${g.colors.length} ${g.colors.length === 1 ? 'stop' : 'stops'}</span>`;
   sec.appendChild(hdr);
 
   const grid = document.createElement('div');
   grid.className = 'swatches';
 
-  g.colors.forEach(col => {
+  g.colors.forEach((col, i) => {
     const wrap = document.createElement('div');
     wrap.className = 'swatch-wrap';
+    wrap.style.setProperty('--i', i);
 
     const sw = document.createElement('div');
     sw.className = 'swatch';
@@ -229,7 +348,7 @@ GROUPS.forEach(g => {
     sw.setAttribute('aria-label', `Copiar ${col.hex}`);
     sw.title = col.hex;
     sw.addEventListener('click', () => copyHex(col.hex.slice(1), sw));
-    sw.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' ') copyHex(col.hex, sw); });
+    sw.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' ') { e.preventDefault(); copyHex(col.hex.slice(1), sw); } });
 
     const meta = document.createElement('div');
     meta.innerHTML = `<div class="swatch-stop">${col.stop}</div><div class="swatch-hex">${col.hex.toLowerCase()}</div>`;
@@ -241,6 +360,103 @@ GROUPS.forEach(g => {
 
   sec.appendChild(grid);
   root.appendChild(sec);
+}
+
+function moveIndicator(tab) {
+  indicator.style.width = tab.offsetWidth + 'px';
+  indicator.style.transform = `translateX(${tab.offsetLeft}px)`;
+}
+
+const LEAVE_MS     = 220 + 10 * 12;   // duración de `fall` + retraso del último swatch
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+let switchToken    = 0;
+
+function selectBrand(id, { focus = false } = {}) {
+  const brand = BRANDS.find(b => b.id === id) || BRANDS[0];
+
+  tabsEl.querySelectorAll('.tab').forEach(t => {
+    const on = t.dataset.brand === brand.id;
+    t.setAttribute('aria-selected', on);
+    t.tabIndex = on ? 0 : -1;
+    if (on) {
+      moveIndicator(t);
+      root.setAttribute('aria-labelledby', t.id);
+      if (focus) t.focus();
+    }
+  });
+
+  const s = document.body.style;
+  s.setProperty('--accent', brand.accent || stopOf(brand, '500'));
+  s.setProperty('--glow-a', rgba(stopOf(brand, '800'), 0.22));
+  s.setProperty('--glow-b', rgba(stopOf(brand, '600'), 0.14));
+
+  document.getElementById('brand-name').textContent = brand.name;
+  document.getElementById('ffile').textContent = `// ${brand.id}-color-palette.html`;
+  document.title = `${brand.name} · Color Palette`;
+
+  // Salida de la paleta actual y luego entrada de la nueva
+  const token = ++switchToken;
+  const show = () => {
+    if (token !== switchToken) return;   // otro cambio llegó mientras salía
+    root.classList.remove('enter', 'leave');
+    root.innerHTML = '';
+    brand.groups.forEach(renderGroup);
+    void root.offsetWidth;          // reflow para reiniciar animación
+    root.classList.add('enter');
+  };
+  if (!root.children.length || reduceMotion.matches) {
+    show();
+  } else {
+    root.classList.remove('enter');
+    root.classList.add('leave');
+    setTimeout(show, LEAVE_MS);
+  }
+
+  history.replaceState(null, '', '#' + brand.id);
+  try { localStorage.setItem('palette-brand', brand.id); } catch (e) {}
+}
+
+BRANDS.forEach(b => {
+  const t = document.createElement('button');
+  t.className = 'tab';
+  t.id = 'tab-' + b.id;
+  t.type = 'button';
+  t.dataset.brand = b.id;
+  t.setAttribute('role', 'tab');
+  t.setAttribute('aria-controls', 'root');
+  t.innerHTML = `<span class="tab-dot" style="background:${stopOf(b, '500')};color:${stopOf(b, '500')}"></span>${b.name}`;
+  t.addEventListener('click', () => { if (t.getAttribute('aria-selected') !== 'true') selectBrand(b.id); });
+  tabsEl.appendChild(t);
+});
+
+// Flechas / Home / End para moverse entre tabs
+tabsEl.addEventListener('keydown', e => {
+  const tabs = [...tabsEl.querySelectorAll('.tab')];
+  const cur  = tabs.indexOf(document.activeElement);
+  if (cur < 0) return;
+  let next = null;
+  if (e.key === 'ArrowRight') next = (cur + 1) % tabs.length;
+  if (e.key === 'ArrowLeft')  next = (cur - 1 + tabs.length) % tabs.length;
+  if (e.key === 'Home')       next = 0;
+  if (e.key === 'End')        next = tabs.length - 1;
+  if (next === null) return;
+  e.preventDefault();
+  selectBrand(tabs[next].dataset.brand, { focus: true });
+});
+
+window.addEventListener('resize', () => {
+  const active = tabsEl.querySelector('.tab[aria-selected="true"]');
+  if (active) moveIndicator(active);
+});
+
+let saved = null;
+try { saved = localStorage.getItem('palette-brand'); } catch (e) {}
+indicator.style.transition = 'none';
+selectBrand(location.hash.slice(1) || saved || BRANDS[0].id);
+requestAnimationFrame(() => { indicator.style.transition = ''; });
+document.fonts && document.fonts.ready.then(() => {
+  const active = tabsEl.querySelector('.tab[aria-selected="true"]');
+  if (active) moveIndicator(active);
 });
 
 document.getElementById('fdate').textContent =
